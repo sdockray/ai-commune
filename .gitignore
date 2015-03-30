@@ -7,6 +7,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+venv/
 env/
 build/
 develop-eggs/
@@ -52,3 +53,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# App-specific
+config/*.ini
+tagger.pickle

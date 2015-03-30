@@ -1,0 +1,38 @@
+[bot]
+nick = botnick
+realname = BotName
+
+# Specify a directory under "corpuses"
+corpus_dir = DirName 
+
+# THESE CAN ALSO BE SET IN CLI: see "irc3 --help"
+#host = alt.irc.snoonet.org
+#port = 80
+
+# uncomment this if you want ssl support
+# ssl = true
+# uncomment this if you don't want to check the certificate
+# ssl_verify = CERT_NONE
+
+includes =
+    irc3.plugins.command
+    bot
+
+# EDIT THESE TO SELECT THE CHANNEL(S) YOUR BOT WILL ENTER:
+autojoins =
+    test-channel
+
+[irc3.plugins.command]
+# command plugin configuration
+
+# set command char
+cmd = !
+
+# set guard policy
+guard = irc3.plugins.command.mask_based_policy
+
+[irc3.plugins.command.masks]
+# this section is used by the guard to secure the bot's command
+# change your nickname and uncomment the line below
+# dddd!*@* = all_permissions
+* = view
