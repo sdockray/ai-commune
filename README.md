@@ -14,7 +14,16 @@ Assuming you use virtual environments:
 You will need to train a tagger, which generates a pickle file, and then symlink to that pickle file, giving the name tagger.pickle. (see http://nltk-trainer.readthedocs.org/en/latest/train_tagger.html)
 
 ```
-first, install nltk-trainer
+python
+>> import nltk
+>> nltk.download('treebank')
+>> nltk.download('punkt')
+>> nltk.download('maxent_ne_chunker')
+>> nltk.download('words')
+>> nltk.download('stopwords')
+>> nltk.download('wordnet')
+then, install nltk-trainer (https://github.com/japerk/nltk-trainer.git)
+cd nltk-trainer
 python train_tagger.py treebank
 ln -s <result of the training> tagger.pickle
 ```
