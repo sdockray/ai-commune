@@ -16,7 +16,7 @@ class Plugin(object):
         grammar = language.CorpusAnalyzer(dirname=bot.config['corpus_dir'])
         vocabulary = grammar
         self.c = language.Conversation(grammar=grammar, vocabulary=vocabulary)
-        self.delay = (15, 45)
+        self.delay = (2, 10)
         self.current = None
         self.last_message = time.time()
         self.break_silence_time = 20

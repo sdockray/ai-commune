@@ -307,7 +307,7 @@ class GrammarManager(object):
 					return phrase
 			return phrase
 		def finalize(phrase):
-			if phrase[0] in ',?.':
+			if phrase[0] in ',?.!':
 				phrase = phrase[1:]
 			phrase = [w for w in phrase if w not in '()[]:;\'"' ]
 			return check_cutoff_entities(phrase)
