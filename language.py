@@ -456,7 +456,8 @@ class Conversation(object):
 
 	# This asks the grammar manager to use the various grammars to construct a new sentence
 	def three_words(self, first_word=None, allow_longer=False):
-		return self.gm.three_words(first_word=first_word, exclusions=[], topics=self.topics, allow_longer=allow_longer)
+		exclusions = [x[0] for x in self.memory]
+		return self.gm.three_words(first_word=first_word, exclusions=exclusions, topics=self.topics, allow_longer=allow_longer)
 
 	# Takes a string
 	def listen(self, s):

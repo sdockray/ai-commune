@@ -16,7 +16,7 @@ class Plugin(object):
         grammar = language.CorpusAnalyzer(dirname=bot.config['corpus_dir'])
         vocabulary = grammar
         self.c = language.Conversation(grammar=grammar, vocabulary=vocabulary)
-        self.delay = (2, 10)
+        self.delay = (5, 20)
         self.current = None
         self.last_message = time.time()
         self.break_silence_time = 20
@@ -32,7 +32,17 @@ class Plugin(object):
 
     @irc3.event(r'^:(?P<mask>\S+!\S+@\S+) (?P<event>(PRIVMSG|NOTICE)) (?P<target>\S+) :\s*(?P<data>\S+.*)$')
     def msg3(self, **kwargs):
-        if not kwargs['target']==self.bot.config['nick']:
+        # Only respond if this is one of the channels the bot has joined
+        if kwargs['target'][1:].upper() in map(unicode.upper, self.bot.config['autojoins']):
+            # don't respond to "Hi whoever!" messages
+            if kwargs['data'].startswith("Hi ") and kwargs['data'].endswith("!"):
+                print "Ignoring: ",kwargs['data']
+                return 
+            # don't respond to certain users (for example, the narrator)
+            if kwargs['mask'].startswith("Narrator"):
+                print "Ignoring the narrator"
+                return
+            # Listen to what has been said
             self.c.listen(kwargs['data'])
             toks = language.tokenize(kwargs['data'])
             self.current = toks
@@ -45,8 +55,7 @@ class Plugin(object):
             return
         response = self.c.three_words(first_word=self.current[-1], allow_longer=True)
         if response:
-            message = ' '.join(response)
-            self.call_with_human_delay(self.add_to_chat, target, message, self.current)
+            self.call_with_human_delay(self.add_to_chat, target, response, self.current)
 
     @irc3.event(irc3.rfc.PING)
     def think(self, **kwargs):
@@ -62,7 +71,9 @@ class Plugin(object):
 
     def add_to_chat(self, target, message, responding_to):
         if self.current == responding_to:
-            self.bot.privmsg(target, message)
+            message_str =' '.join(message)
+            self.c.listen(message_str)
+            self.bot.privmsg(target, message_str)
             self.current = responding_to
             self.last_message = time.time()
         else:
