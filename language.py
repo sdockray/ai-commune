@@ -22,6 +22,8 @@ from nltk.corpus import wordnet
 import rake
 import pickle
 
+import rnn
+
 tagger = pickle.load(open('tagger.pickle'))
 
 def tokenize(raw_text, by_sentence=False, recursion=False):
@@ -456,11 +458,23 @@ class Conversation(object):
 
 	# This asks the grammar manager to use the various grammars to construct a new sentence
 	def three_words(self, first_word=None, allow_longer=False):
-		exclusions = [x[0] for x in self.memory]
-		return self.gm.three_words(first_word=first_word, exclusions=exclusions, topics=self.topics, allow_longer=allow_longer)
+		#exclusions = [x[0] for x in self.memory]
+		return self.gm.three_words(first_word=first_word, topics=self.topics, allow_longer=allow_longer)
+
+	# Get a continuation from the neural network
+	def continuation(self, text):
+		# start off the continuation with a trigram
+		t = self.three_words(first_word=text.split()[-1])
+		return "%s %s" % (' '.join(t),self.gm.grammar_corpus.nn.continue_from(t, include_first_word=False))
+		#text = ' '.join(filter(None, (word.strip(string.punctuation) for word in text.split())))
+		#return self.gm.grammar_corpus.nn.continue_from(text)
 
 	# Takes a string
 	def listen(self, s):
+		if self.gm.grammar_corpus.nn:
+			mem = ' '.join([w[0] for s in self.memory for w in s])
+			self.gm.grammar_corpus.nn.ingest_sentences(nltk.sent_tokenize(mem))
+			self.gm.grammar_corpus.nn.train_model(max_epochs=4, samples_per_epoch=8, reset_model=True )
 		self.memory.extend(tag(s))
 		# [x[0] for x in tag(s, False)]
 		# Keep the memory small-ish
@@ -833,7 +847,7 @@ class VocabularyCorpus(object):
 
 
 class CorpusAnalyzer(GrammarCorpus, VocabularyCorpus):
-	def __init__(self, filename=None, dirname=None, *args, **kwargs):
+	def __init__(self, filename=None, dirname=None, use_nn=False, *args, **kwargs):
 		if dirname:
 			raw_text = ''
 			txt_path = os.path.join('corpuses',dirname,'*.txt')
@@ -866,7 +880,8 @@ class CorpusAnalyzer(GrammarCorpus, VocabularyCorpus):
 		self.trigram_collocations = None
 		self.tags = tag(raw_text)
 		self.analyze()
-
+		# create a neural network (the NN model should be trained already or this will take too long)
+		self.nn = rnn.LanguageNN(save_name="%s.pkl" % dirname, save_dir='nn', corpus=raw_text, vocab_size=15000, train_epochs=10, minibatch_size=8) if use_nn else None
 	# Extract entities (proper nouns)
 	def extract_entities(self):
 		entities = []
@@ -1091,123 +1106,9 @@ class CorpusAnalyzer(GrammarCorpus, VocabularyCorpus):
 	def score_sentence(self, sentence):
 		return self.sentence_probability(sentence) + self.sentence_probability(sentence, True)
 
-demo_grammar = """
-  S -> X01 VBD
-  X01 -> DT NN
-  X02 -> IN X01
-  VBD -> 'slept' | 'saw' X01 | 'walked' X02
-  DT -> 'the' | 'a'
-  NN -> 'man' | 'park' | 'dog'
-  IN -> 'in' | 'with'
-"""
-demo_grammar_small = """
-    S -> NN X0001
-    X0001 -> X0002 X0003
-    X0002 -> NNP NNP
-    X0003 -> VBD VBN
-"""
-
-#grammar = EvolutionaryGrammar.fromstring(demo_grammar_small)
-#print grammar.tostring()
-#print grammar.flat_structure()
-#print str(grammar)
-#grammar.random_sentence()
-
-
-"""
-# add a new noun to the vocabulary
-lhs = nltk.grammar.Nonterminal('NN')
-rhs = [u'authorship']
-new_production = nltk.grammar.Production(lhs, rhs)
-grammar._productions.append(new_production)    
-print str(grammar)
-
-
-corpus = CorpusAnalyzer('bratton.txt')
-c = Conversation(grammar=corpus)
-c.listen("can you see a ghost in the network")
-c.listen("we are machines of loving grace in the school of life")
-c.listen("Bruce Sterling")
-print c.something_topical_2(first_word="is")
-
-
-import time
-
-corpus_bratton = CorpusAnalyzer('bratton.txt')
-corpus_dockray = CorpusAnalyzer('dockray.txt')
-bratton = Conversation(grammar=corpus_bratton)
-dockray = Conversation(grammar=corpus_dockray)
-w1 = None
-w2 = None
-
-while True:
-	if not w1:
-		w1 = [None,None,None]
-	w2 = bratton.three_words(first_word=w1[-1], allow_longer=True)
-	print "bratton: ",w2
-	time.sleep(2)
-	if not w2:
-		w2 = [None,None,None]
-	w1 = dockray.three_words(first_word=w2[-1], allow_longer=True)
-	print "dockray: ",w1
-	time.sleep(2)
-"""
-
-#grammar.link_corpus(corpus)
-#grammar.learn_from_corpus(20)
-
-
-#idx = 81 #random.randint(0,len(corpus.tags)-1)
-#print corpus.tags[idx]
-#print corpus.get_word_collocations(pos_1='CC', pos_2='WP')
-#print corpus.get_word_collocations(pos_1='WP', pos_2='VBZ')
-#print corpus.get_word_collocations(pos_1='VBZ', pos_2='DT')
-#print corpus.get_word_collocations(pos_1='DT', pos_2='NN')
-
-
-"""
-def print_random_sentence(N=10):
-	tot = 0
-	for i in range(N):
-		s = grammar.random_sentence_2(samples=25)
-		score = corpus.score_sentence(s)
-		tot += score
-		print s
-	return tot/N
-
-score = print_random_sentence(10)
-print "Average score = ", score
-
-grammar.mutate_split_branch()
-print grammar.flat_structure()
-
-score = print_random_sentence(10)
-print "Average score = ", score
-
-print grammar.tostring()
-"""
-#print corpus.pos_after('NN')
-#print corpus.sentence_probability('the essay form is a cheese slice', pos=True)
-#print corpus.sentence_probability('oodles of noodles and poodles with snickerdoodles', pos=True)
-#print corpus.sentence_probability('walter benjamin wrote that eggs are easy to eat but hard to chew', pos=True)
-#print corpus.get_words('MD')
-#print corpus.word_after('could')
-#print corpus.get_words('RBS')
-#print corpus.get_random_word('JJ')
-
-
-"""
-f = file('test2.txt','r')
-contents = f.read()
-contents = unicodedata.normalize('NFKD', contents.decode("utf-8")).encode('ascii', 'ignore')
-counts = get_tags(contents)
-for tag in counts:
-	print tag, len(counts[tag])
-# get a random noun
-print counts['NN'][random.randint(0,len(counts['NN'])-1)]
-print does_production_exist(grammar, 'NN', "'park'")
-"""
-
-from nltk.stem.wordnet import WordNetLemmatizer
-
+if __name__ == "__main__":
+	grammar = CorpusAnalyzer(dirname="SeanDockray")
+	vocabulary = grammar
+	c = Conversation(grammar=grammar, vocabulary=vocabulary)
+	print c.continuation("for some platforms")
 

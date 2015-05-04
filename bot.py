@@ -15,9 +15,16 @@ class Plugin(object):
         self.bot = bot
         grammar = language.CorpusAnalyzer(dirname=bot.config['corpus_dir'])
         vocabulary = grammar
-        self.c = language.Conversation(grammar=grammar, vocabulary=vocabulary)
-        self.delay = (5, 20)
+        self.response_type = 'markov' # markov or nn
+        if 'response_type' in self.bot.config and self.bot.config['response_type']=='nn':
+            self.response_type = 'nn'
+        if self.response_type == 'nn':
+            self.c = language.Conversation(grammar=grammar, vocabulary=vocabulary, use_nn=True)
+        else:
+            self.c = language.Conversation(grammar=grammar, vocabulary=vocabulary)
+        self.delay = (1, 5)
         self.current = None
+        self.current_str = "I"
         self.last_message = time.time()
         self.break_silence_time = 20
 
@@ -45,6 +52,7 @@ class Plugin(object):
             # Listen to what has been said
             self.c.listen(kwargs['data'])
             toks = language.tokenize(kwargs['data'])
+            self.current_str = kwargs['data']
             self.current = toks
             self.last_message = time.time()
             self.generate_response(kwargs['target'])
@@ -53,7 +61,10 @@ class Plugin(object):
     def generate_response(self, target):
         if not self.current:
             return
-        response = self.c.three_words(first_word=self.current[-1], allow_longer=True)
+        if self.response_type == 'nn':
+            response = self.c.continuation(self.current_str)
+        else:
+            response = self.c.three_words(first_word=self.current[-1], allow_longer=True)
         if response:
             self.call_with_human_delay(self.add_to_chat, target, response, self.current)
 
@@ -71,8 +82,8 @@ class Plugin(object):
 
     def add_to_chat(self, target, message, responding_to):
         if self.current == responding_to:
-            message_str =' '.join(message)
-            self.c.listen(message_str)
+            message_str =' '.join(message) if type(message) is list else message
+            #self.c.listen(message_str)
             self.bot.privmsg(target, message_str)
             self.current = responding_to
             self.last_message = time.time()

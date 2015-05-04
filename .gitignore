@@ -57,3 +57,4 @@ target/
 # App-specific
 config/*.ini
 tagger.pickle
+*.pkl
