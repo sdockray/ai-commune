@@ -275,7 +275,7 @@ if __name__ == "__main__":
 			if exc.errno != errno.EISDIR:
 				raise # Propagate other kinds of IOError.
 	# will create and train the model
-	l = LanguageNN(corpus=raw_text, save_name="%s.pkl"%corpus, save_dir='nn', vocab_size=15000, train_epochs=100, minibatch_size=16)
+	l = LanguageNN(corpus=raw_text, save_name="%s.pkl"%corpus, save_dir='nn', vocab_size=15000, train_epochs=20, minibatch_size=256)
 	l.continue_from("I am")
 
 
