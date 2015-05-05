@@ -239,6 +239,7 @@ class LanguageNN:
 		#m, _ = pad_into_matrix(numeric_tokens)
 		m = numeric_tokens
 		predictions = self.model.pred_fun([m])
+		"""
 		import matplotlib.pyplot as plt
 		data = np.random.random( (500,500) )
 		arr = predictions[0,numeric_tokens.size-2]
@@ -247,6 +248,7 @@ class LanguageNN:
 		b[:,:] = norm
 		plt.figimage(b)
 		plt.savefig('zzz_image.png',format='png')
+		"""
 		try:
 			arr = predictions[0,numeric_tokens.size-2]
 			temp = np.argpartition(-arr, num)

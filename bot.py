@@ -22,7 +22,9 @@ class Plugin(object):
             self.c = language.Conversation(grammar=grammar, vocabulary=vocabulary, use_nn=True)
         else:
             self.c = language.Conversation(grammar=grammar, vocabulary=vocabulary)
-        self.delay = (1, 5)
+        dmin = self.bot.config['delay_min'] if 'delay_min' in self.bot.config else 5
+        dmax = self.bot.config['delay_max'] if 'delay_max' in self.bot.config else 20
+        self.delay = (dmin, dmax)
         self.current = None
         self.current_str = "I"
         self.last_message = time.time()
