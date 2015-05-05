@@ -94,7 +94,8 @@ class Model:
             new_states = self.model.forward(idx, prev_hiddens = new_hiddens)
             if greedy:
                 new_idxes = new_states[-1]
-                new_idx   = new_idxes.argmax()
+                #new_idx   = new_idxes.argmax()
+                new_idx   = T.argmax(new_idxes)
                 # provide a stopping condition for greedy search:
                 return ([new_idx.astype(self.priming_word.dtype)] + new_states[1:-1]), theano.scan_module.until(T.eq(new_idx,self._stop_word))
             else:
